@@ -1,0 +1,7 @@
+---
+const items = Array.from({ length: 40 });
+---
+
+<div class="flex overflow-hidden gap-4 w-full">
+    {items.map(() => <div class="w-16 h-3 shrink-0 -skew-x-30 text-3xl bg-linear-to-b from-gradient-first to-gradient-last opacity-50" />)}
+</div>

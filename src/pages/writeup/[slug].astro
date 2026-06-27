@@ -1,0 +1,37 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/Navbar.astro';
+import { getCollection } from 'astro:content';
+import CreateTags from '../../components/element/CreateTags.astro';
+
+export async function getStaticPaths() {
+    const writeupEntries = await getCollection('writeups');
+    return writeupEntries.map((entry) => ({
+        params: { slug: entry.slug },
+        props: { entry },
+    }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+---
+
+<Layout>
+    <Navbar />
+    <article class="writeup-content px-4 md:px-0">
+        <div class="w-full min-h-[24rem] py-12 flex flex-col gap-6 md:gap-10 justify-center items-center">
+            <div class="font-title text-3xl md:text-5xl text-center font-bold bg-linear-to-b from-gray-800 to-indigo-400 bg-clip-text text-transparent">
+                {entry.data.title}
+            </div>
+            <span class="w-[90vw] md:w-[50vw] text-center">{entry.data.description}</span>
+            <CreateTags
+                tags1={entry.data.tags[0]}
+                tags2={entry.data.tags[1]}
+                tags3={entry.data.tags[2]}
+            />
+        </div>
+        <div class="w-full max-w-5xl mx-auto pb-16">
+            <Content />
+        </div>
+    </article>
+</Layout>

@@ -1,0 +1,11 @@
+// tailwind.config.mjs
+/** @type {import('tailwindcss').Config} */
+export default {
+    theme: {
+        extend: {},
+    },
+    plugins: [
+        require('@tailwindcss/typography'),
+        // ...
+    ],
+};

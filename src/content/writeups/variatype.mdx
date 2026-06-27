@@ -1,0 +1,235 @@
+---
+    "title": "HTB Writeup | Variatype"
+    "difficulty": "Medium"
+    "author": "Rvexrie"
+    "dateCreated": "21/2/2026"
+    "tags": ["Web Exploitation", "Supply Chain Attack", "Arbritary File Write"]
+    "description": "This machine focuses on the Supply Chain and Dependency risk. It simulates how outdated tools like fonttools and fontforge can become critical weak points. The path to root is particularly educational, highlighting a common pitfall in Python's os.path.join() function where unsanitized user input can lead to arbitrary file writes in sensitive directories like /root/.ssh"
+    "type": "Boot2Root"
+    "link": "/writeup/variatype"
+    "platform": "HTB"
+---
+
+import Image from '../../components/element/Image.astro'
+import Section from '../../components/element/Section.astro';
+import Codeblock from '../../components/element/Codeblock.astro';
+import Paragraph from '../../components/element/Paragraph.astro'
+import ContentContainer from '../../components/element/Content.astro'
+import VariatypeLoginPorta from '../../assets/writeup/variatype/variatypeloginportal.png'
+import VaraitypePortalDashboard from '../../assets/writeup/variatype/variatypeportaldashboard.png'
+import VariatypeMainDashboard from '../../assets/writeup/variatype/variatypemaindashboard.png'
+
+<ContentContainer>
+
+<Section title="Recon" />
+{/* content */}
+
+<Paragraph>
+First, I scan the network with nmap and got this output, i also scan the webapp(80) for hidden vhost with ffuf
+</Paragraph>
+
+<Codeblock filename={'fastScan.txt'}>
+Not shown: 65533 closed tcp ports (reset)
+PORT   STATE SERVICE REASON
+22/tcp open  ssh     syn-ack ttl 63
+80/tcp open  http    syn-ack ttl 63
+</Codeblock>
+
+<Codeblock filename={'vhost.txt'}>
+```
+        /'___\  /'___\           /'___\       
+       /\ \__/ /\ \__/  __  __  /\ \__/       
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\      
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/      
+         \ \_\   \ \_\  \ \____/  \ \_\       
+          \/_/    \/_/   \/___/    \/_/       
+
+       v2.1.0-dev
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://variatype.htb
+ :: Wordlist         : FUZZ: /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt
+ :: Header           : Host: FUZZ.variatype.htb
+ :: Follow redirects : false
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200-299,301,302,307,401,403,405,500
+ :: Filter           : Response size: 169
+________________________________________________
+
+portal                  [Status: 200, Size: 2494, Words: 445, Lines: 59, Duration: 31ms]
+:: Progress: [110000/110000] :: Job [1/1] :: 1785 req/sec :: Duration: [0:00:56] :: Errors: 0 ::
+```
+</Codeblock>
+
+<Paragraph>
+It return one vhost, a login portal, maybe for employee? but we don't have the creds
+</Paragraph>
+
+<Image image={VariatypeLoginPorta} />
+
+<Paragraph>
+So let's continue with fuzzing the directories, maybe we can get something interesting..
+</Paragraph>
+
+<Codeblock filename={'webDir.txt'}>
+```
+ ___  ___  __   __     __      __         __   ___
+|__  |__  |__) |__) | /  `    /  \ \_/ | |  \ |__
+|    |___ |  \ |  \ | \__,    \__/ / \ | |__/ |___
+by Ben "epi" Risher 🤓                 ver: 2.13.1
+───────────────────────────┬──────────────────────
+ 🎯  Target Url            │ http://portal.variatype.htb/
+ 🚩  In-Scope Url          │ portal.variatype.htb
+ 🚀  Threads               │ 50
+ 📖  Wordlist              │ /usr/share/seclists/Discovery/Web-Content/common.txt
+ 👌  Status Codes          │ All Status Codes!
+ 💥  Timeout (secs)        │ 7
+ 🦡  User-Agent            │ feroxbuster/2.13.1
+ 💉  Config File           │ /home/rvexrie/.config/feroxbuster/ferox-config.toml
+ 🔎  Extract Links         │ true
+ 🏁  HTTP methods          │ [GET]
+ 🔃  Recursion Depth       │ 4
+───────────────────────────┴──────────────────────
+ 🏁  Press [ENTER] to use the Scan Management Menu™
+──────────────────────────────────────────────────
+404      GET        7l       11w      153c Auto-filtering found 404-like response and created new filter; toggle off with --dont-filter
+200      GET        1l        2w       23c http://portal.variatype.htb/.git/HEAD
+200      GET        8l       21w      143c http://portal.variatype.htb/.git/config
+200      GET        2l        5w      187c http://portal.variatype.htb/.git/index
+301      GET        7l       11w      169c http://portal.variatype.htb/.git => http://portal.variatype.htb/.git/
+403      GET        7l        9w      153c http://portal.variatype.htb/.git/logs/
+200      GET      369l      818w     8789c http://portal.variatype.htb/styles.css
+200      GET       58l      200w     2494c http://portal.variatype.htb/
+301      GET        7l       11w      169c http://portal.variatype.htb/files => http://portal.variatype.htb/files/
+200      GET       58l      200w     2494c http://portal.variatype.htb/index.php
+301      GET        7l       11w      169c http://portal.variatype.htb/.git/hooks => http://portal.variatype.htb/.git/hooks/
+301      GET        7l       11w      169c http://portal.variatype.htb/.git/info => http://portal.variatype.htb/.git/info/
+301      GET        7l       11w      169c http://portal.variatype.htb/.git/logs => http://portal.variatype.htb/.git/logs/
+301      GET        7l       11w      169c http://portal.variatype.htb/.git/objects => http://portal.variatype.htb/.git/objects/
+301      GET        7l       11w      169c http://portal.variatype.htb/.git/objects/03 => http://portal.variatype.htb/.git/objects/03/
+301      GET        7l       11w      169c http://portal.variatype.htb/.git/objects/50 => http://portal.variatype.htb/.git/objects/50/
+200      GET        6l       43w      240c http://portal.variatype.htb/.git/info/exclude
+301      GET        7l       11w      169c http://portal.variatype.htb/.git/objects/info => http://portal.variatype.htb/.git/objects/info/
+301      GET        7l       11w      169c http://portal.variatype.htb/.git/objects/pack => http://portal.variatype.htb/.git/objects/pack/
+```
+</Codeblock>
+<Paragraph>It's indeed interesting</Paragraph>
+<Codeblock filename={'webDir.txt'}>
+200      GET        1l        2w       23c http://portal.variatype.htb/.git/HEAD
+200      GET        8l       21w      143c http://portal.variatype.htb/.git/config
+200      GET        2l        5w      187c http://portal.variatype.htb/.git/index
+301      GET        7l       11w      169c http://portal.variatype.htb/.git => http://portal.variatype.htb/.git/
+403      GET        7l        9w      153c http://portal.variatype.htb/.git/logs/
+</Codeblock>
+<Paragraph>
+.git Got leaked! let's try to dump it and check its information
+</Paragraph>
+<Codeblock filename={'gitTree.txt'}>
+```
+.
+├── COMMIT_EDITMSG
+├── config
+├── description
+├── HEAD
+├── index
+├── info
+│   └── exclude
+├── logs
+│   ├── HEAD
+│   └── refs
+│       ├── heads
+│       │   └── master
+│       └── remotes
+│           └── origin
+├── objects
+│   ├── 00
+│   ├── 03
+│   │   └── 0e929d424a937e9bd079794a7e1aaf366bcfaf
+│   ├── 50
+│   │   └── 30e791b764cb2a50fcb3e2279fea9737444870
+│   ├── 61
+│   │   └── 5e621dce970c2c1c16d2a1e26c12658e3669b3
+│   ├── 6f
+│   │   └── 021da6be7086f2595befaa025a83d1de99478b
+│   ├── 75
+│   │   └── 3b5f5957f2020480a19bf29a0ebc80267a4a3dc
+│   ├── b3
+│   │   └── 28305f0e85c2b97a7e2a94978ae20f16db75e8
+│   ├── c6
+│   │   └── ea13ef05d96cf3f35f62f87df24ade29d1d6b4
+│   └── info
+└── refs
+    ├── heads
+    │   └── master
+    └── remotes
+        └── origin
+
+21 directories, 16 files
+```
+</Codeblock>
+<Paragraph>
+looks like the config don't have much useful information
+</Paragraph>
+<Codeblock filename={'gitConfig.txt'}>
+```
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[user]
+	name = Dev Team
+	email = dev@variatype.htb
+```
+</Codeblock>
+<Paragraph>how about commit message</Paragraph>
+<Codeblock filename={'commitMessage.txt'}>
+```
+◄ 0s ◎ cat COMMIT_EDITMSG                                                                                                                                   □ variatype/a 13:22
+security: remove hardcoded credentials
+```
+</Codeblock>
+<Paragraph>
+oh look! hardcoded creds? it begin to smells really good, lets check previous commit~
+</Paragraph>
+<Codeblock filename={'prevCommit.txt'}>
+```
+◄ 0s ◎ git cat-file -p HEAD                                                                                                                                 □ variatype/a 13:19
+tree c6ea13ef05d96cf3f35f62f87df24ade29d1d6b4
+parent 5030e791b764cb2a50fcb3e2279fea9737444870
+author Dev Team <dev@variatype.htb> 1764968373 -0500
+committer Dev Team <dev@variatype.htb> 1764968373 -0500
+
+fix: add gitbot user for automated validation pipeline
+                                                                                                                                                                               
+◄ 0s ◎ git cat-file -p c6ea13ef05d96cf3f35f62f87df24ade29d1d6b4                                                                                             □ variatype/a 13:19
+100644 blob b328305f0e85c2b97a7e2a94978ae20f16db75e8	auth.php
+                                                                                                                                                                               
+◄ 0s ◎ git cat-file -p b328305f0e85c2b97a7e2a94978ae20f16db75e8                                                                                             □ variatype/a 13:20
+<?php
+session_start();
+$USERS = [
+    'gitbot' => 'G1tB0t_Acc3ss_2025!'
+];
+```
+</Codeblock>
+<Paragraph>
+Hell YEAHHHH, lets try login with the portal
+</Paragraph>
+<Image image={VaraitypePortalDashboard}/>
+<Paragraph>
+annndddd we got nothing, yeah, its an archive. hmmmm maybe we can upload a malicious ttf file from the main webapp? because it said variable font generator.
+</Paragraph>
+<Image image={VariatypeMainDashboard} />
+<Paragraph>
+yeah, we can upload malicious file here for sure, and it also using fonttools for processing the file, but we don't know the exact version of fonttools used
+</Paragraph>
+</ContentContainer>
+
+<ContentContainer>
+<Section title={'WebApp'}/>
+<Paragraph>UNDER CONSTRUCTION</Paragraph>
+</ContentContainer>

@@ -1,0 +1,15 @@
+---
+import ContentWriteupDecor from "./ContentWriteupDecor.astro"
+---
+
+<div class="flex justify-center w-full px-4 md:px-0">
+    <div class="p-2 mt-4 w-[90vw] max-w-5xl pl-2 pr-2 bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl">
+        <ContentWriteupDecor />
+        <div class="pt-5">
+            <slot />
+        </div>
+        <div class="pt-5">
+            <ContentWriteupDecor />
+        </div>
+    </div>
+</div>

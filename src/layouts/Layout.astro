@@ -1,0 +1,57 @@
+---
+import '../styles/global.css';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width"
+        />
+        <link
+            rel="icon"
+            type="image/svg+xml"
+            href="/moon.png"
+        />
+        <link
+            rel="icon"
+            href="/favicon.ico"
+        />
+        <link
+            rel="preconnect"
+            href="https://fonts.googleapis.com"
+        />
+        <link
+            rel="preconnect"
+            href="https://fonts.gstatic.com"
+            crossorigin
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Nunito:wght@400;600;700&family=Fira+Code&display=swap"
+            rel="stylesheet"
+        />
+        <meta
+            name="generator"
+            content={Astro.generator}
+        />
+        <title>Kaleidoscape.ctf</title>
+    </head>
+    <body
+        class="scrollbar-thin bg-size-[400%_400%] selection:bg-purple-300 selection:text-gray-500 bg-accent-color/40 text-text-primary bg-linear-to-br from-gradient-first to-gradient-last animate-gradient-x bg-fixed font-body">
+        <slot />
+        <Footer/>
+    </body>
+</html>
+
+<style>
+    html,
+    body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+    }
+</style>

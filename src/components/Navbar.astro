@@ -1,0 +1,30 @@
+---
+import moon from '../assets/moon.png';
+import search from '../assets/search.png';
+const { highlight } = Astro.props;
+const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<div class="w-full flex justify-center items-center skew-x-10">
+    <nav class="p-2 mt-4 w-[95%] md:w-[75%] lg:w-[50%] bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl">
+        <div class="flex justify-between items-center -skew-x-10 px-2 md:px-0">
+            <div class="flex justify-start">
+                <img
+                    src={moon.src}
+                    class="w-8 md:w-12"
+                />
+            </div>
+            <div class="flex justify-center gap-3 md:gap-6 text-sm md:text-base">
+                <a href={`${baseUrl}/`}><span class=`${highlight == 'Frontpage' ? 'text-shadow-2xs text-shadow-indigo-100 text-accent-color' : ''}`>Frontpage</span></a>
+                <div>Material</div>
+                <a href={`${baseUrl}/about`}><span class=`${highlight == 'AboutUs' ? 'text-shadow-2xs text-shadow-indigo-100 text-accent-color' : ''}`>AboutUs</span></a>
+            </div>
+            <div>
+                <img
+                    src={search.src}
+                    class="w-8 md:w-12"
+                />
+            </div>
+        </div>
+    </nav>
+</div>

@@ -1,0 +1,44 @@
+---
+const { dateCreated, author, isFeatured, title, description, difficulty, type, tags1, tags2, tags3, link } = Astro.props;
+const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, ''); 
+const hrefPath = link.startsWith('/') ? link : `/${link}`;
+const finalLink = link === '#' ? '#' : `${baseUrl}${hrefPath}`;
+---
+
+<div class=`${isFeatured == 'True' ? 'shadow-xl shadow-amber-100' : 'shadow-xl shadow-indigo-300'} border border-white/30 hover:shadow-[0_0_35px_rgba(165,180,252,0.45)] transition-all hover:-translate-y-1`>
+    <div class=`bg-white/60 backdrop-blur-xl [clip-path:polygon(0_0,99%_0,100%_100%,0_100%)] w-full flex flex-col border-b-2 border-transparent hover:border-red-400 transition-all`>
+        
+        <div class="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-0">
+            <div class="px-4 py-2 pt-4 flex flex-wrap gap-2">
+                {isFeatured == 'True' && (
+                    <div class="truncate relative rounded-full border-2 border-indigo-400 px-3 shadow shadow-indigo-300 text-xs md:text-sm font-code flex justify-center items-center">Featured!</div>
+                )}
+                {tags1 && <div class="truncate relative rounded-full bg-indigo-200 px-3 text-xs md:text-sm font-code flex justify-center items-center">{tags1}</div>}
+                {tags2 && <div class="truncate relative rounded-full bg-red-200 px-3 text-xs md:text-sm font-code flex justify-center items-center">{tags2}</div>}
+                {tags3 && <div class="truncate relative rounded-full bg-purple-200 px-3 text-xs md:text-sm font-code flex justify-center items-center">{tags3}</div>}
+            </div>
+            <div class="px-4 sm:py-2 pb-2 pt-0 flex gap-2 shrink-0">
+                <div class=`rounded-full font-code flex justify-center items-center ${difficulty == 'Insane' ? 'bg-red-400 text-white' : ''} ${difficulty == 'Hard' ? 'bg-red-300' : ''} ${difficulty == 'Medium' ? 'bg-indigo-300' : ''} ${difficulty == 'Easy' ? 'bg-green-300' : ''} ${difficulty == 'Very Easy' ? 'bg-green-200' : ''} px-3 py-1 sm:py-0 text-xs md:text-sm`>
+                    {difficulty}
+                </div>
+            </div>
+        </div>
+
+        <a class="px-4 pb-3 md:pb-5 mt-2" href={finalLink}>
+            <div class="font-title text-xl md:text-2xl bg-linear-to-b from-gray-700 to-indigo-500 bg-clip-text text-transparent">{title}</div>
+        </a>
+
+        <div class="px-4 pb-3 max-h-20 md:max-h-16 overflow-clip">
+            <p class="line-clamp-2 text-sm md:text-base">
+                {description}
+            </p>
+        </div>
+
+        <div class="px-4 pt-2 md:pt-4 pb-3 flex flex-wrap flex-row justify-between items-center gap-2">
+            <div>
+                <span class="font-code opacity-60 text-xs md:text-sm">@{author} | {dateCreated}</span>
+            </div>
+            {type && <div class="rounded-full border-2 border-purple-400 px-3 py-1 text-xs md:text-sm font-code flex justify-center items-center">{type}</div>}
+        </div>
+    </div>
+</div>

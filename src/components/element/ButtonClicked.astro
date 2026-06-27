@@ -1,0 +1,16 @@
+---
+const { text, identifier } = Astro.props;
+---
+
+<label class="cursor-pointer">
+    <input
+        type="checkbox"
+        name={identifier}
+        value={identifier}
+        class="peer hidden"
+    />
+    <span class="font-code border-2 border-accent-color w-fit p-1 px-5 rounded-full peer-checked:border-amber-700 peer-checked:shadow-[0_0_10px_rgba(165,180,252,0.25)]
+ peer-checked:shadow-amber-200">
+        {text}
+    </span>
+</label>

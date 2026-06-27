@@ -1,0 +1,14 @@
+[
+{
+    "title": "HTB Writeup | Variatype",
+    "difficulty": "Medium",
+    "isFeatured": "True",
+    "author": "Rvexrie",
+    "dateCreated": "21/2/2026",
+    "tags": ["Web Exploitation", "Supply Chain Attack", "Arbritary File Write"],
+    "description": "This machine focuses on the Supply Chain and Dependency risk. It simulates how outdated tools like fonttools and fontforge can become critical weak points. The path to root is particularly educational, highlighting a common pitfall in Python's os.path.join() function where unsanitized user input can lead to arbitrary file writes in sensitive directories like /root/.ssh",
+    "type": "Boot2Root",
+    "link": "/writeup/variatype",
+    "platform": "HTB"
+  }
+]

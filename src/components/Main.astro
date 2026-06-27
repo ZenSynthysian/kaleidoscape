@@ -1,0 +1,149 @@
+---
+import BlogCardR from './blog/BlogCardR.astro';
+import ButtonClicked from './element/ButtonClicked.astro';
+import writeupsData from '../data/writeups.json'
+---
+
+<div>
+    <main>
+        <div class="w-full h-96 flex flex-col justify-center items-center px-4 text-center">
+            <div class="font-title text-4xl md:text-5xl font-bold bg-linear-to-b from-gray-800 to-indigo-400 bg-clip-text text-transparent">Kaleidoscape.ctf</div>
+            <span class="mt-2">We’ll solve it… eventually</span>
+        </div>
+        <div class="w-full flex justify-center flex-col gap-2">
+            <div class="flex flex-col lg:flex-row justify-between m-4 md:m-8 lg:m-16 lg:ml-2 gap-6 lg:gap-0">
+                
+                <div class="mx-auto lg:ml-16 lg:mr-5 w-full lg:w-[30%] flex flex-col gap-3 relative lg:sticky lg:top-24 h-auto lg:h-fit lg:self-start shrink-0">
+                    <div class="rounded gap-2 flex flex-col p-3 border-b-2 border-transparent bg-white/60 backdrop-blur-xl shadow-xl shadow-indigo-300 hover:shadow-indigo-200 transition-all duration-100">
+                        <input
+                            type="text"
+                            class="outline-none w-full bg-transparent"
+                            placeholder="Search writeups, tags, author..."
+                        />
+                    </div>
+                    <div class="rounded gap-2 flex flex-col p-3 border-b-2 border-transparent bg-white/60 backdrop-blur-xl shadow-xl shadow-indigo-300 hover:shadow-indigo-200 transition-all duration-100">
+                        <div class="font-title text-xl">Difficulty</div>
+                        <ul class="flex flex-col gap-3">
+                            <li><ButtonClicked text="Very Easy" identifier="diff-veryeasy" /></li>
+                            <li><ButtonClicked text="Easy" identifier="diff-easy" /></li>
+                            <li><ButtonClicked text="Medium" identifier="diff-medium" /></li>
+                            <li><ButtonClicked text="Hard" identifier="diff-hard" /></li>
+                            <li><ButtonClicked text="Insane" identifier="diff-insane" /></li>
+                        </ul>
+                    </div>
+                    <div class="rounded gap-2 flex flex-col p-3 border-b-2 border-transparent bg-white/60 backdrop-blur-xl shadow-xl shadow-indigo-300 hover:shadow-indigo-200 transition-all duration-100">
+                        <div class="font-title text-xl">Category</div>
+                        <ul class="flex flex-col gap-3">
+                            <li><ButtonClicked text="Boot2Root" identifier="category-boot2root" /></li>
+                            <li><ButtonClicked text="PWN" identifier="category-pwn" /></li>
+                            <li><ButtonClicked text="Reversing" identifier="category-reversing" /></li>
+                            <li><ButtonClicked text="Web" identifier="category-web" /></li>
+                        </ul>
+                    </div>
+                    <div class="rounded gap-2 flex flex-col p-3 border-b-2 border-transparent bg-white/60 backdrop-blur-xl shadow-xl shadow-indigo-300 hover:shadow-indigo-200 transition-all duration-100">
+                        <div class="font-title text-xl">Platform</div>
+                        <ul class="flex flex-col gap-3">
+                            <li><ButtonClicked text="HTB" identifier="platform-htb" /></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-5 w-full lg:w-[70%]">
+                    <div class="rounded gap-2 flex flex-col p-3 border-b-2 border-transparent bg-white/60 backdrop-blur-xl shadow-xl shadow-indigo-300 hover:shadow-indigo-200 transition-all duration-100">
+                        <p class="font-code">Total Writeups: <span id="writeupCount">{writeupsData.length}</span></p>
+                    </div>
+                    
+                    <div id="writeupsContainer" class="flex flex-col gap-5">
+                        {writeupsData.map((item) => (
+                            <div 
+                                class="writeup-card-wrapper transition-all duration-300"
+                                data-title={item.title.toLowerCase()}
+                                data-author={item.author.toLowerCase()}
+                                data-tags={item.tags.join(' ').toLowerCase()}
+                                data-difficulty={item.difficulty.toLowerCase().replace(' ', '')} 
+                                data-category={item.type.toLowerCase()}
+                                data-platform={item.platform ? item.platform.toLowerCase() : ''}
+                            >
+                                <BlogCardR
+                                    title={item.title}
+                                    difficulty={item.difficulty}
+                                    isFeatured={item.isFeatured}
+                                    author={item.author}
+                                    dateCreated={item.dateCreated}
+                                    description={item.description}
+                                    tags1={item.tags[0] || ''}
+                                    tags2={item.tags[1] || ''}
+                                    tags3={item.tags[2] || ''}
+                                    type={item.type}
+                                    link={item.link?.startsWith('/writeup') ? item.link : '#'}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+        const filterCheckboxes = document.querySelectorAll('input[type="checkbox"]'); 
+        const writeupCards = document.querySelectorAll('.writeup-card-wrapper');
+        const countDisplay = document.getElementById('writeupCount');
+
+        function filterWriteups() {
+            const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            
+            const activeFilters = {
+                difficulty: [] as string[],
+                category: [] as string[],
+                platform: [] as string[]
+            };
+
+            filterCheckboxes.forEach((cb) => {
+                const checkbox = cb as HTMLInputElement;
+                if (checkbox.checked) {
+                    const val = checkbox.value.toLowerCase();
+                    if (val.startsWith('diff-')) activeFilters.difficulty.push(val.replace('diff-', ''));
+                    if (val.startsWith('category-')) activeFilters.category.push(val.replace('category-', ''));
+                    if (val.startsWith('platform-')) activeFilters.platform.push(val.replace('platform-', ''));
+                }
+            });
+
+            let visibleCount = 0;
+
+            writeupCards.forEach((card) => {
+                const htmlCard = card as HTMLElement;
+                
+                const title = htmlCard.dataset.title || '';
+                const author = htmlCard.dataset.author || '';
+                const tags = htmlCard.dataset.tags || '';
+                const difficulty = htmlCard.dataset.difficulty || '';
+                const category = htmlCard.dataset.category || '';
+                const platform = htmlCard.dataset.platform || '';
+
+                const matchesSearch = query === '' || title.includes(query) || author.includes(query) || tags.includes(query);
+
+                const matchesDiff = activeFilters.difficulty.length === 0 || activeFilters.difficulty.includes(difficulty);
+                const matchesCategory = activeFilters.category.length === 0 || activeFilters.category.includes(category);
+                const matchesPlatform = activeFilters.platform.length === 0 || activeFilters.platform.includes(platform);
+
+                if (matchesSearch && matchesDiff && matchesCategory && matchesPlatform) {
+                    htmlCard.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    htmlCard.style.display = 'none';
+                }
+            });
+
+            if (countDisplay) {
+                countDisplay.textContent = visibleCount.toString();
+            }
+        }
+
+        if (searchInput) searchInput.addEventListener('input', filterWriteups);
+        filterCheckboxes.forEach(cb => cb.addEventListener('change', filterWriteups));
+    });
+</script>
