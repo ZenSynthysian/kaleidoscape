@@ -1,8 +1,19 @@
 [
-{
-    "title": "HTB Writeup | Variatype",
+  {
+    "title": "picoCTF Writeup | Dear Diary",
     "difficulty": "Medium",
     "isFeatured": "True",
+    "author": "Rvexrie",
+    "dateCreated": "2/7/2026",
+    "tags": ["SleuthKit", "Disk Image", "Inode Logging"],
+    "description": "A digital forensics challenge where focused on hidden artifacts, espescially inode journal",
+    "type": "Forensics",
+    "link": "/writeup/deardiary",
+    "platform": "PICO"
+  },{
+    "title": "HTB Writeup | Variatype",
+    "difficulty": "Medium",
+    "isFeatured": "False",
     "author": "Rvexrie",
     "dateCreated": "21/2/2026",
     "tags": ["Web Exploitation", "Supply Chain Attack", "Arbritary File Write"],

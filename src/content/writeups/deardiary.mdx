@@ -1,0 +1,202 @@
+---
+"title": "picoCTF Writeup | Dear Diary"
+"difficulty": "Medium"
+"isFeatured": "True"
+"author": "Rvexrie"
+"dateCreated": "2/7/2026"
+"tags": ["SleuthKit", "Disk Image", "Inode Logging"]
+"description": "A digital forensics challenge where focused on hidden artifacts, espescially inode journal"
+"type": "Forensics"
+"link": "/writeup/deardiary"
+"platform": "PICO"
+---
+
+import Image from '../../components/element/Image.astro'
+import Section from '../../components/element/Section.astro';
+import Codeblock from '../../components/element/Codeblock.astro';
+import Paragraph from '../../components/element/Paragraph.astro'
+import ContentContainer from '../../components/element/Content.astro'
+
+<ContentContainer>
+<Section title="Challenge Description" />
+<Paragraph>If you can find the flag on this disk image, we can close the case for good!</Paragraph>
+</ContentContainer>
+
+<ContentContainer>
+<Section title="Image Analysis" />
+<Paragraph>
+Let's get image information first using the sleuthkit
+</Paragraph>
+<Codeblock filename="partition.txt">
+```
+◄ 0s ◎ mmls disk.flag.img                                                                                                                           □ forensics/deardiary
+DOS Partition Table
+Offset Sector: 0
+Units are in 512-byte sectors
+
+      Slot      Start        End          Length       Description
+000:  Meta      0000000000   0000000000   0000000001   Primary Table (#0)
+001:  -------   0000000000   0000002047   0000002048   Unallocated
+002:  000:000   0000002048   0000616447   0000614400   Linux (0x83)
+003:  000:001   0000616448   0001140735   0000524288   Linux Swap / Solaris x86 (0x82)
+004:  000:002   0001140736   0002097151   0000956416   Linux (0x83)
+```
+</Codeblock>
+<Paragraph>We got two linux partition here, the first one has offset 2048 and the second is 1140736. Well I'll extract both of them</Paragraph>
+<Codeblock filename="extract.txt">
+```
+◄ 0s ◎ tsk_recover -e -o 2048 disk.flag.img linux1/                                                                                                 □ forensics/deardiary
+Files Recovered: 13
+                                                                                                                                                                               
+◄ 0s ◎ tsk_recover -e -o 1140736 disk.flag.img linux2/                                                                                              □ forensics/deardiary
+Files Recovered: 2074
+```
+</Codeblock>
+<Paragraph>From the files recovered count, I think the second one is the root system</Paragraph>
+<Codeblock>
+```
+◄ 0s ◎ ls linux1/                                                                                                                                   □ forensics/deardiary
+󰡯 boot
+󰡯 config-virt
+󱁻 extlinux.conf
+󰡯 initramfs-virt
+ ldlinux.c32
+ ldlinux.sys
+ libcom32.c32
+ libutil.c32
+ mboot.c32
+ menu.c32
+ System.map-virt
+ vesamenu.c32
+󰡯 vmlinuz-virt
+                                                                                                                                                                               
+◄ 0s ◎ ls linux2/                                                                                                                                   □ forensics/deardiary
+ bin
+ etc
+ lib
+ root
+ sbin
+ usr
+ var
+```
+</Codeblock>
+<Paragraph>Yeah, the second one is the root system, and for the first one.. i dont see any strange file</Paragraph>
+</ContentContainer>
+
+<ContentContainer>
+<Section title="Searching for the flag"/>
+<Paragraph>Since there's nothing strange on linux1 partition, I'll focus on the interesting one, root directory!</Paragraph>
+<Codeblock filename="rootTree.txt">
+```
+◄ 0s ◎ tree linux2/root/ -a                                                                                                                         □ forensics/deardiary
+linux2/root/
+├── .ash_history
+└── secret-secrets
+    └── force-wait.sh
+
+2 directories, 2 files
+```
+</Codeblock>
+<Paragraph>Oh! directory containing a secret!</Paragraph>
+<Codeblock filename="force-wait.sh">
+```
+◄ 0s ◎ cat linux2/root/secret-secrets/force-wait.sh                                                                                                 □ forensics/deardiary
+#!/bin/ash
+
+sleep 10
+```
+</Codeblock>
+<Paragraph>Unfortunately nothing useful here, I'll crosscheck root directory using fls in case we miss something, the directory has name "secret-secrets", maybe it can be the hint</Paragraph>
+<Codeblock filename="flsOutput.txt">
+```
+◄ 0s ◎ fls -o 1140736 disk.flag.img                                                                                                                 □ forensics/deardiary
+d/d 32513:	home
+d/d 11:	lost+found
+d/d 32385:	boot
+d/d 64769:	etc
+d/d 32386:	proc
+d/d 13:	dev
+d/d 32387:	tmp
+d/d 14:	lib
+d/d 32388:	var
+d/d 21:	usr
+d/d 32393:	bin
+d/d 32395:	sbin
+d/d 32539:	media
+d/d 203:	mnt
+d/d 32543:	opt
+d/d 204:	root
+d/d 32544:	run
+d/d 205:	srv
+d/d 32545:	sys
+d/d 32530:	swap
+V/V 119417:	$OrphanFiles
+                                                                                                                                                                               
+◄ 0s ◎ fls -o 1140736 disk.flag.img 204                                                                                                             □ forensics/deardiary
+r/r 1837:	.ash_history
+d/d 1842:	secret-secrets
+                                                                                                                                                                               
+◄ 0s ◎ fls -o 1140736 disk.flag.img 1842                                                                                                            □ forensics/deardiary 
+r/r 1843:	force-wait.sh
+r/r 1844:	innocuous-file.txt
+r/r 1845:	its-all-in-the-name
+                                                   
+```
+</Codeblock>
+</ContentContainer>
+
+<ContentContainer>
+<Section title="Getting the flag" />
+<Paragraph>Another hint! the flag must be in the file name, but where? wait a sec, let me do a mini research...</Paragraph>
+<Paragraph>Okay so.... from what i found. Analyzing a filename in Linux disk forensics involves mapping the human-readable string to its corresponding filesystem structure (like an inode or directory entry) and analyzing associated metadata</Paragraph>
+<Paragraph>Which mean, there should be inode that exists specifically for filename, and yeah, i found it.</Paragraph>
+<Codeblock filename="specialExt4Inode.txt">
+```
+Inode 2: The Root Directory (/) of the filesystem.
+Inode 1: List of defective/bad blocks.
+Inode 7: The boot loader block tracking.
+Inode 8: Journal data tracking.
+Inode 11: The traditional first available inode for normal files/directories (often utilized by lost+found).
+```
+</Codeblock>
+<Paragraph>This is a common special inode on Ext4, and fortunately, the given partition is Ext4</Paragraph>
+<Codeblock filename="partitionInformation.txt">
+```
+◄ 0s ○ fsstat -o 1140736 disk.flag.img                                                                                                              □ forensics/deardiary
+FILE SYSTEM INFORMATION
+--------------------------------------------
+File System Type: Ext4
+Volume Name: 
+Volume ID: af5c83083edee4a5dc4bc28f7733125f
+```
+</Codeblock>
+<Paragraph>I'll focusing on inode 8 because its a inode for journal data tracking, which mean we can see the filename history, from the previous section we know that inode 1844 stand for "innocuous-file.txt" and inode 1845 for "its-all-in-the-name"</Paragraph>
+<Paragraph>let's begin with inode 1844 history</Paragraph>
+<Codeblock filename="inode1844History.txt">
+```
+◄ 0s ◎ fls -o 1140736 disk.flag.img 8 | strings | grep 1844                                                                                         □ forensics/deardiary
+-/- 18449:	
+r/r 1844:	innocuous-file.txt
+```
+</Codeblock>
+<Paragraph>nothing useful, how about 1845?</Paragraph>
+<Codeblock filename="inode1845History.txt">
+```
+◄ 0s ◎ fls -o 1140736 disk.flag.img 8 | strings | grep 1845                                                                                         □ forensics/deardiary 13:02
+-/r 1845:	
+r/r 1845:	original-filename
+r/r 1845:	pic
+r/r 1845:	oCT
+r/r 1845:	F{1
+r/r 1845:	_53
+r/r 1845:	3_n
+r/r 1845:	4m3
+r/r 1845:	5_8
+r/r 1845:	0d2
+r/r 1845:	4b3
+r/r 1845:	0}
+r/r 1845:	its-all-in-the-name
+```
+</Codeblock>
+<Paragraph>Jackpot ✨️ we got the flag!!</Paragraph>
+</ContentContainer>
