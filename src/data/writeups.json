@@ -6,7 +6,7 @@
     "author": "Rvexrie",
     "dateCreated": "2/7/2026",
     "tags": ["SleuthKit", "Disk Image", "Inode Logging"],
-    "description": "A digital forensics challenge where focused on hidden artifacts, espescially inode journal",
+    "description": "A digital forensics challenge focused on hidden artifacts, espescially inode journal",
     "type": "Forensics",
     "link": "/writeup/deardiary",
     "platform": "PICO"
