@@ -1,25 +1,50 @@
 [
-  {
-    "title": "picoCTF Writeup | Dear Diary",
-    "difficulty": "Medium",
-    "isFeatured": "True",
-    "author": "Rvexrie",
-    "dateCreated": "2/7/2026",
-    "tags": ["SleuthKit", "Disk Image", "Inode Logging"],
-    "description": "A digital forensics challenge focused on hidden artifacts, espescially inode journal",
-    "type": "Forensics",
-    "link": "/writeup/deardiary",
-    "platform": "PICO"
-  },{
-    "title": "HTB Writeup | Variatype",
-    "difficulty": "Medium",
-    "isFeatured": "False",
-    "author": "Rvexrie",
-    "dateCreated": "21/2/2026",
-    "tags": ["Web Exploitation", "Supply Chain Attack", "Arbritary File Write"],
-    "description": "This machine focuses on the Supply Chain and Dependency risk. It simulates how outdated tools like fonttools and fontforge can become critical weak points. The path to root is particularly educational, highlighting a common pitfall in Python's os.path.join() function where unsanitized user input can lead to arbitrary file writes in sensitive directories like /root/.ssh",
-    "type": "Boot2Root",
-    "link": "/writeup/variatype",
-    "platform": "HTB"
-  }
+    {
+        "title": "picoCTF Writeup | Forensics Git 2",
+        "difficulty": "Medium",
+        "isFeatured": "False",
+        "author": "Bjoerka",
+        "dateCreated": "16/7/2026",
+        "tags": ["SleuthKit", "Git", "Logs"],
+        "description": "The agents interrupted the perpetrator's disk deletion routine. Can you recover this git repo?",
+        "type": "Forensics",
+        "link": "/writeup/forensicsgit2",
+        "platform": "PICO"
+    },
+    {
+        "title": "picoCTF Writeup | Forensics Git 0",
+        "difficulty": "Medium",
+        "isFeatured": "False",
+        "author": "Bjoerka",
+        "dateCreated": "16/7/2026",
+        "tags": ["SleuthKit", "Git"],
+        "description": "Can you find the flag in this disk image?",
+        "type": "Forensics",
+        "link": "/writeup/forensicsgit0",
+        "platform": "PICO"
+    },
+    {
+        "title": "picoCTF Writeup | Dear Diary",
+        "difficulty": "Medium",
+        "isFeatured": "True",
+        "author": "Rvexrie",
+        "dateCreated": "2/7/2026",
+        "tags": ["SleuthKit", "Disk Image", "Inode Logging"],
+        "description": "A digital forensics challenge focused on hidden artifacts, espescially inode journal",
+        "type": "Forensics",
+        "link": "/writeup/deardiary",
+        "platform": "PICO"
+    },
+    {
+        "title": "HTB Writeup | Variatype",
+        "difficulty": "Medium",
+        "isFeatured": "False",
+        "author": "Rvexrie",
+        "dateCreated": "21/2/2026",
+        "tags": ["Web Exploitation", "Supply Chain Attack", "Arbritary File Write"],
+        "description": "This machine focuses on the Supply Chain and Dependency risk. It simulates how outdated tools like fonttools and fontforge can become critical weak points. The path to root is particularly educational, highlighting a common pitfall in Python's os.path.join() function where unsanitized user input can lead to arbitrary file writes in sensitive directories like /root/.ssh",
+        "type": "Boot2Root",
+        "link": "/writeup/variatype",
+        "platform": "HTB"
+    }
 ]

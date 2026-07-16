@@ -1,0 +1,339 @@
+---
+    "title": "picoCTF Writeup | Forensics Git 2"
+    "difficulty": "Medium"
+    "isFeatured": "False"
+    "author": "Bjoerka"
+    "dateCreated": "16/7/2026"
+    "tags": ["SleuthKit", "Git", "Logs"]
+    "description": "The agents interrupted the perpetrator's disk deletion routine. Can you recover this git repo?"
+    "type": "Forensics"
+    "link": "/writeup/forensicsgit2"
+    "platform": "PICO"
+---
+
+import Image from '../../components/element/Image.astro'
+import Section from '../../components/element/Section.astro';
+import Codeblock from '../../components/element/Codeblock.astro';
+import Paragraph from '../../components/element/Paragraph.astro'
+import ContentContainer from '../../components/element/Content.astro'
+
+<ContentContainer>
+<Section title="Preparation"/>
+<Paragraph>
+First, I put the files we're going to analyze into a separate folder
+</Paragraph>
+<Codeblock filename="movingFile.txt">
+```
+◄ 0s ◎ mv Downloads/disk.img.gz cysec/forensics/disk/                                                                                                                   ⌂ 10:10
+                                                                                
+◄ 0s ◎ cd cysec/forensics/disk/                                                                                                                                         ⌂ 10:12
+                                                                                
+◄ 0s ◎ ls                                                                                                                                                □ forensics/disk 10:12
+ forensic_git0
+ forensic_git2
+ sleuthkitintro
+ disk.img.gz
+ partition4.img
+ partition4.img.gz
+ partition4.txt
+ partition4timeline.txt
+                                                                                
+◄ 0s ◎ mkdir forensic_git1                                                                                                                               □ forensics/disk 10:12
+                                                                                
+◄ 0s ◎ mv disk.img.gz forensic_git1                                                                                                                      □ forensics/disk 10:12
+                                                                                
+◄ 0s ◎ ls                                                                                                                                                □ forensics/disk 10:12
+ forensic_git0
+ forensic_git1
+ forensic_git2
+ sleuthkitintro
+ partition4.img
+ partition4.img.gz
+ partition4.txt
+ partition4timeline.txt
+                                                                                
+◄ 0s ◎ cd forensic_git1
+```
+</Codeblock>
+<Paragraph>
+Next, we'll extract the .img file so we can analyze it
+</Paragraph>
+<Codeblock filename="extractPartition.txt">
+```
+◄ 0s ◎ ls                                                                                                                                            □ disk/forensic_git1 10:12
+ disk.img.gz
+                                                                                
+◄ 0s ◎ 7z x disk.img.gz                                                                                                                              □ disk/forensic_git1 10:12
+
+7-Zip 26.02 (x64) : Copyright (c) 1999-2026 Igor Pavlov : 2026-06-25
+ 64-bit locale=en_US.UTF-8 Threads:8 OPEN_MAX:4096, ASM
+
+Scanning the drive for archives:
+1 file, 131973088 bytes (126 MiB)
+
+Extracting archive: disk.img.gz
+--
+Path = disk.img.gz
+Type = gzip
+Headers Size = 19
+
+Everything is Ok
+
+Size:       1073741824
+Compressed: 131973088
+                                                                                
+◄ 2s ◎ ls                                                                                                                                            □ disk/forensic_git1 10:12
+ disk.img
+ disk.img.gz
+```
+</Codeblock>
+</ContentContainer>
+<ContentContainer>
+<Section title="Analysis"/>
+<Paragraph>
+Use `7z x filename` if you want to extract a file, or you can use other tools if you don't want to use this one.
+
+Let's check which partitions are in that file.
+</Paragraph>
+<Codeblock filename="partition.txt">
+```
+◄ 0s ◎ mmls disk.img                                                                                                                                 □ disk/forensic_git1 10:12
+DOS Partition Table
+Offset Sector: 0
+Units are in 512-byte sectors
+
+      Slot      Start        End          Length       Description
+000:  Meta      0000000000   0000000000   0000000001   Primary Table (#0)
+001:  -------   0000000000   0000002047   0000002048   Unallocated
+002:  000:000   0000002048   0000616447   0000614400   Linux (0x83)
+003:  000:001   0000616448   0001140735   0000524288   Linux Swap / Solaris x86 (0x82)
+004:  000:002   0001140736   0002097151   0000956416   Linux (0x83)
+```
+</Codeblock>
+<Paragraph>
+Use `mmls filename` if you want to check the partitions in the .img file.
+
+We know that there are two partitions here that we can check: the Linux partitions with start sectors 2048 and 1140736. Why is that? Because the remaining partitions will not be used.
+</Paragraph>
+<Codeblock filename="partition.txt">
+```
+◄ 0s ◎ fls -o 2048 disk.img                                                                                                                          □ disk/forensic_git1 10:16
+d/d 11:	lost+found
+r/r 13:	ldlinux.sys
+r/r 14:	ldlinux.c32
+r/r 16:	config-6.6.116-0-lts
+r/r 17:	vmlinuz-lts
+r/r 18:	initramfs-lts
+l/l 19:	boot
+r/r 21:	libutil.c32
+r/r 20:	extlinux.conf
+r/r 22:	libcom32.c32
+r/r 23:	mboot.c32
+r/r 24:	menu.c32
+r/r 15:	System.map-6.6.116-0-lts
+r/r 25:	vesamenu.c32
+V/V 76913:	$OrphanFiles
+                                                                                
+◄ 0s ◎ fls -o 1140736 disk.img                                                                                                                       □ disk/forensic_git1 10:22
+d/d 64770:	home
+d/d 11:	lost+found
+d/d 64769:	boot
+d/d 32385:	etc
+d/d 13:	proc
+d/d 64772:	dev
+d/d 14:	tmp
+d/d 15:	lib
+d/d 64773:	var
+d/d 22:	bin
+d/d 24:	sbin
+d/d 64778:	usr
+d/d 64948:	media
+d/d 170:	mnt
+d/d 171:	opt
+d/d 172:	root
+d/d 173:	run
+d/d 64952:	srv
+d/d 174:	sys
+d/d 65275:	swap
+V/V 119417:	$OrphanFiles
+```
+</Codeblock>
+<Paragraph>
+There are two different partitions here; we will use the one with a start sector of 1140736 because this is the partition used to store user files.
+
+Next, we’ll extract the partition we’ll be using.
+</Paragraph>
+<Codeblock filename="partition.txt">
+```
+◄ 0s ◎ tsk_recover -e -o 1140736 disk.img recovered/                                                                                                 □ disk/forensic_git1 10:52
+Files Recovered: 5609
+                                                                                
+◄ 0s ◎ ls                                                                                                                                            □ disk/forensic_git1 10:52
+ recovered
+ disk.img
+ disk.img.gz
+                                                                                
+◄ 0s ◎ cd recove                                                                                                                                     □ disk/forensic_git1 10:52
+                                                                                
+◄ 0s ◎                                                                                                                                          □ forensic_git2/recovered 10:52
+```
+</Codeblock>
+<Paragraph>
+Create a dedicated folder to separate the extracted files using `mkdir directory_name`
+
+`tsk_recover -e -o offset filename directory_name` if you want to extract files from the partition, including deleted ones
+
+Navigate to the dedicated folder you just created
+
+Check the entire contents of the files and folders within that partition using `ls -la` so that all files and folders are visible, including hidden ones
+</Paragraph>
+<Codeblock filename="partition.txt">
+```
+◄ 0s ◎ ls -la                                                                                                                                   □ forensic_git2/recovered 10:57
+drwxr-xr-x - ajirbit 14 Jul 20:32  bin
+drwxr-xr-x - ajirbit 14 Jul 20:32  etc
+drwxr-xr-x - ajirbit 14 Jul 20:32 󱂵 home
+drwxr-xr-x - ajirbit 14 Jul 20:32  lib
+drwxr-xr-x - ajirbit 14 Jul 20:32  root
+drwxr-xr-x - ajirbit 14 Jul 20:32  sbin
+drwxr-xr-x - ajirbit 14 Jul 20:32  usr
+drwxr-xr-x - ajirbit 14 Jul 20:32  var
+```
+</Codeblock>
+</ContentContainer>
+<ContentContainer>
+<Section title="Getting Flag"/>
+<Paragraph>
+Use `find folder_name -name pattern_name` to locate the Git directory we're looking for
+</Paragraph>
+<Codeblock filename=".git">
+```
+◄ 0s ◎ find . -name .git                                                                                                                        □ forensic_git2/recovered 10:57
+./home/ctf-player/Code/killer-chat-app/.git
+                                                                                
+◄ 0s ◎ cd home/ctf-player/Code/killer-chat-app/.git/                                                                                            □ forensic_git2/recovered 11:02
+                                                                                
+◄ 0s ◎ ls -la                                                                                                                            □ killer-chat-app/.git △⎪▪┤5│●◦⎥ 11:03
+drwxr-xr-x   - ajirbit 14 Jul 21:04  hooks
+drwxr-xr-x   - ajirbit 14 Jul 20:32  info
+drwxr-xr-x   - ajirbit 14 Jul 20:32  logs
+drwxr-xr-x   - ajirbit 14 Jul 21:04  objects
+drwxr-xr-x   - ajirbit 14 Jul 21:04  refs
+.rw-r--r--  20 ajirbit 14 Jul 20:32 󰊢 COMMIT_EDITMSG
+.rw-r--r-- 150 ajirbit 14 Jul 21:04 󱁻 config
+.rw-r--r--  73 ajirbit 14 Jul 20:32 󰡯 description
+.rw-r--r--  23 ajirbit 14 Jul 20:32 󰡯 HEAD
+.rw-r--r-- 478 ajirbit 14 Jul 20:32 󰡯 index
+```
+</Codeblock>
+<Paragraph>
+After locating it, we navigate to that directory and view the contents of the files and folders in the .git folder.
+
+Open the HEAD file, as the commit hash is likely listed there.
+</Paragraph>
+<Codeblock filename=".git">
+```
+◄ 0s ◎ cat HEAD                                                                                                                          □ killer-chat-app/.git △⎪▪┤5│●◦⎥ 11:03
+ref: refs/heads/master
+                                                                                
+◄ 0s ◎ cd logs/ |ls -la                                                                                                                  □ killer-chat-app/.git △⎪▪┤5│●◦⎥ 11:15
+                                                                                
+◄ 0s ◎ ls -la                                                                                                                                         □ .git/logs⎪▪┤5│●◦⎥ 11:15
+drwxr-xr-x    - ajirbit 14 Jul 20:32  refs
+.rw-r--r-- 1.0k ajirbit 14 Jul 20:32 󰡯 HEAD
+```
+</Codeblock>
+<Paragraph>
+However, if there aren't any, we can go to the log files and view the HEAD content inside them.
+</Paragraph>
+<Codeblock filename=".git">
+```
+◄ 0s ◎ cat HEAD                                                                                                                                       □ .git/logs⎪▪┤5│●◦⎥ 11:15
+0000000000000000000000000000000000000000 2c0a9b2b15dce92f800393d5030c7454efc278ae ctf-player <ctf-player@example.com> 1763549240 +0000	commit (initial): Add netcat scripts
+2c0a9b2b15dce92f800393d5030c7454efc278ae 26b809e0c41d8421f1126ed3a4eb06ad66e6d90a ctf-player <ctf-player@example.com> 1763549240 +0000	commit: Add video game chat log
+26b809e0c41d8421f1126ed3a4eb06ad66e6d90a 5827632e046a80a1e0d7b4fc5c7800dd539baeaf ctf-player <ctf-player@example.com> 1763549240 +0000	commit: Add TV show chat log
+5827632e046a80a1e0d7b4fc5c7800dd539baeaf e80b38b3322a5ba32ac07076ef5eeb4a59449875 ctf-player <ctf-player@example.com> 1763549240 +0000	commit: Add secret hideout chat log
+e80b38b3322a5ba32ac07076ef5eeb4a59449875 2151ef0ccc15aed1ab88e1afdc7484aaeff211c4 ctf-player <ctf-player@example.com> 1763549240 +0000	commit: Remove secret hideout log
+2151ef0ccc15aed1ab88e1afdc7484aaeff211c4 01533f718556a0e59f1467dae4fa462eed82c2a1 ctf-player <ctf-player@example.com> 1763549240 +0000	commit: Add random chat log
+```
+</Codeblock>
+<Paragraph>
+In this section, we see an interesting hash worth checking out—specifically in the “Add secret hideout chat log” section; something was added in this commit.
+
+Let’s check it out using `git cat-file -p [HASH]`
+</Paragraph>
+<Codeblock filename=".git">
+```
+◄ 0s ◎ git cat-file -p e80b38b3322a5ba32ac07076ef5eeb4a59449875                                                                                       □ .git/logs⎪▪┤5│●◦⎥ 11:15
+tree ead27e2bd5a0fc22868ffb629a768f82dfcda11c
+parent 5827632e046a80a1e0d7b4fc5c7800dd539baeaf
+author ctf-player <ctf-player@example.com> 1763549240 +0000
+committer ctf-player <ctf-player@example.com> 1763549240 +0000
+
+Add secret hideout chat log
+```
+</Codeblock>
+<Paragraph>
+There are two more HASH entries in there.
+
+So we’ll do the same thing as before using the HASH tree.
+
+Why is that? Why not use the parent? Because the parent is the folder that came before “Add secret hideout chat-log,” whereas we want to check the contents of “Add secret hideout chat-log”—that’s why we’re just using the HASH in the tree.
+</Paragraph>
+<Codeblock filename=".git">
+```
+◄ 0s ◎ git cat-file -p 5827632e046a80a1e0d7b4fc5c7800dd539baeaf                                                                                       □ .git/logs⎪▪┤5│●◦⎥ 11:29
+tree 6bf83de540f7d12cc3b683a83d69432e03d84509
+parent 26b809e0c41d8421f1126ed3a4eb06ad66e6d90a
+author ctf-player <ctf-player@example.com> 1763549240 +0000
+committer ctf-player <ctf-player@example.com> 1763549240 +0000
+
+Add TV show chat log
+```
+</Codeblock>
+<Paragraph>
+Here's an example: if we use the parent HASH, what we'll check is the content of the “Add TV show chat log”
+
+Let's move on to check the content of the “Add secret hideout chat log”
+</Paragraph>
+<Codeblock filename=".git">
+```
+◄ 0s ◎ git cat-file -p ead27e2bd5a0fc22868ffb629a768f82dfcda11c                                                                                       □ .git/logs⎪▪┤5│●◦⎥ 11:28
+100755 blob d7b4a371ebd23e682ffebc7ec355690fdc94fbd1	client
+040000 tree 22f7d0c9bd045563ae33bfacfbe46fe406a5b318	logs
+100755 blob 71fd2fafcd5ebd62fbf857769c92a91225ab3954	server
+```
+</Codeblock>
+<Paragraph>
+There are several hashes here; let's use the log hashes.
+</Paragraph>
+<Codeblock filename=".git">
+```
+◄ 0s ◎ git cat-file -p 22f7d0c9bd045563ae33bfacfbe46fe406a5b318                                                                                       □ .git/logs⎪▪┤5│●◦⎥ 11:28
+100644 blob aa1cc01687b4ec94faf9916c3fc6efd83f23b816	1.txt
+100644 blob f150f0b963ab3ee95ba5656212abd76d7f2fed2e	2.txt
+100644 blob 7178644433e7cb6da3adf028f1c80d382a18e7b6	3.txt
+```
+</Codeblock>
+<Paragraph>
+There are .txt files with HASH values; check the contents of each .txt file using the command `git cat-file -p [HASH]`, as before
+</Paragraph>
+<Codeblock filename=".git">
+```
+◄ 0s ◎ git cat-file -p aa1cc01687b4ec94faf9916c3fc6efd83f23b816                                                                                       □ .git/logs⎪▪┤5│●◦⎥ 11:29
+Jade: Finally beat the Elden Ring DLC tonight.
+Marco: Nice! That Messmer fight was brutal but so good.
+Jade: Totally worth the grind.
+                                                                                
+◄ 0s ◎ git cat-file -p 7178644433e7cb6da3adf028f1c80d382a18e7b6                                                                                       □ .git/logs⎪▪┤5│●◦⎥ 11:29
+Rex: Meet at the old arcade basement for the secret hideout.
+Jay: Ask Rusty at the door and use password picoCTF{g17_r35cu3_16ac6bf3}.
+Rex: Bring the decoder map so we can plan the route.
+```
+</Codeblock>
+<Paragraph>
+Here, we’ve found the flag we were looking for—specifically in the file 3.txt.
+
+That’s all for my write-up. Thank you.😎
+</Paragraph>
+</ContentContainer>

@@ -1,0 +1,99 @@
+---
+        "title": "picoCTF Writeup | Forensics Git 0"
+        "difficulty": "Medium"
+        "isFeatured": "False"
+        "author": "Bjoerka"
+        "dateCreated": "16/7/2026"
+        "tags": ["SleuthKit", "Git"]
+        "description": "Can you find the flag in this disk image?"
+        "type": "Forensics"
+        "link": "/writeup/forensicsgit0"
+        "platform": "PICO"
+---
+
+
+import Image from '../../components/element/Image.astro'
+import Section from '../../components/element/Section.astro'
+import Codeblock from '../../components/element/Codeblock.astro'
+import Paragraph from '../../components/element/Paragraph.astro'
+import ContentContainer from '../../components/element/Content.astro'
+
+import Pasted20260715200208 from '../../assets/writeup/forensicsgit0/Pasted image 20260715200208.png'
+import Pasted20260715200707 from '../../assets/writeup/forensicsgit0/Pasted image 20260715200707.png'
+import Pasted20260715200835 from '../../assets/writeup/forensicsgit0/Pasted image 20260715200835.png'
+import Pasted20260715201248 from '../../assets/writeup/forensicsgit0/Pasted image 20260715201248.png'
+import Pasted20260715201457 from '../../assets/writeup/forensicsgit0/Pasted image 20260715201457.png'
+import Pasted20260715201921 from '../../assets/writeup/forensicsgit0/Pasted image 20260715201921.png'
+
+<ContentContainer>
+<Section title="Analysis" />
+<Image image={Pasted20260715200208} />
+<Paragraph>
+First, we’ll use the disk.img.gz file as the file we’ll be examining. Be sure to set up a separate folder specifically for running the file we’ll be analyzing so it doesn’t get mixed up with other files or directories.
+</Paragraph>
+<Image image={Pasted20260715200707}/>
+<Paragraph>
+Extract the disk.img.gz file using the following command: `7z x filename`. This command is optional and can be replaced with another extraction method.
+</Paragraph>
+<Image image={Pasted20260715200835}/>
+<Paragraph>
+Check the partitions in the .img file using `mmls filename`
+
+We will focus on the Linux partition in that file
+
+Ignore the Linux swap and Solaris partitions... because these partitions will not be used
+</Paragraph>
+<Paragraph>
+Let's scan all directories on Linux with an offset of 2048 using `fls -o ffset filename`
+</Paragraph>
+<Image image={Pasted20260715201248}/>
+<Paragraph>
+Also check the second partition at offset 1140736.
+</Paragraph>
+<Image image={Pasted20260715201457}/ >
+<Paragraph>
+As you can see, the contents of the directories on the two partitions differ.
+
+Normally, the contents of a partition are similar to those of the partition at offset 1140736; we will focus on this partition.
+</Paragraph>
+<Image image={Pasted20260715201921}/>
+</ContentContainer>
+
+<ContentContainer>
+<Section title="Getting Flag"/>
+<Paragraph>
+Create a dedicated directory, since we will extract the contents of that partition for immediate analysis.
+</Paragraph>
+<Codeblock filename="command.txt">
+Command to create a new directory: mkdir directory_name
+Command to extract the contents of a partition: tsk_recover -r -o partition_offset filename destination_directory
+Enter that directory using cd directory_name
+Use find directory_name -name pattern_name
+</Codeblock>
+<Paragraph>
+
+Why am I searching for Git?
+Because this challenge is titled “Git Forensics,” so I want to check the Git section.
+</Paragraph>
+<Paragraph>
+Now that we’ve found the destination, let’s navigate to the destination directory. Use `ls -la` to display all the files and folders in the directory we’re checking.
+
+Here, I want to check the “logs” folder because that’s where the repository history is stored.
+</Paragraph>
+<Codeblock filename="./logs">
+```
+◄ 0s ◎ cd logs/                                                                                                                                          □ secrets/.git △ 20:31
+                                                                                                                                                                               
+◄ 0s ◎ ls -la                                                                                                                                                 □ .git/logs 20:32
+drwxr-xr-x   - ajirbit 15 Jul 20:19  refs
+.rw-r--r-- 215 ajirbit 15 Jul 20:19 󰡯 HEAD
+                                                                                                                                                                               
+◄ 0s ◎ cat HEAD                                                                                                                                               □ .git/logs 20:32
+0000000000000000000000000000000000000000 327681bb38cf467cec328eec9707b240e3e74ced ctf-player <ctf-player@example.com> 1763542167 +0000	commit (initial): Wrap this phrase in the flag format: g17_1n_7h3_d15k_041217d8
+```
+</Codeblock>
+<Paragraph>
+After entering the folder, I checked the HEAD file using `cat filename` before moving on to other folders in the logs. As you can see, the HEAD file contains suspicious text that resembles the format of a typical CTF challenge flag.
+That concludes my write-up. 🤓
+</Paragraph>
+</ContentContainer>
