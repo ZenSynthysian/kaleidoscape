@@ -252,11 +252,35 @@ oeax = 0x000000fc
                                                 |
 ```
 </Codeblock>
-<Paragraph>interesting.. fyi, because the second scanf missing ampersand, the variable in second argument has the same base stack with the previous scanf, mean If I have a sufficiently long input, i can overflow it and overwrite the variable, which is memory address!</Paragraph>
+<Paragraph>notice welcome is returned before login get called? that behaviour may can lead to stack frame reuse, because the stack frame used by welcome() is later reused by login(), the last few bytes of the name buffer overlap with the memory that will later hold passcode1. By supplying a sufficiently long input, I can control the initial value of passcode1. Since scanf("%d", passcode1) treats that value as a pointer, I can control the address that scanf will write to.</Paragraph>
 <br/>
-<Paragraph>look at the highlighted code, you can see the name variable is -0x70 from rbp and passcode1 -0x10 from rbp, to calculate how much byte needed to reach passcode 1, you can substract 0x70 with 0x10, so we need 96 byte to reach passcode1 from name variable</Paragraph>
+<Paragraph>look at the highlighted code, you can see the name variable is -0x70 from rbp and passcode1 -0x10 from rbp, to calculate how many byte needed to reach passcode 1, you can substract 0x70 with 0x10, so we need 96 byte to reach passcode1 from name variable</Paragraph>
 <br/>
-<Paragraph>we know from the source code that i can input 100 byte, so reach passcode1 is possible, but what if we don't have the source code? how can we know exactly how much input is allocated for scanf?</Paragraph>
+<Paragraph>we know from the source code that i can input 100 byte, so reach passcode1 is possible</Paragraph>
+<Codeblock filename="stackReuseVisual.txt">
+```
+                                The memory is never zeroed by cpu 
+
+welcome func()          | input A*100           | welcome return                |start login()
++---------------+       |+------------------+   |+----------------+             |+-----------------+
+eip (4 byte)            |eip (4byte)            |eip (4byte)                    |eip (4byte)
++---------------+       |+------------------+   |+----------------+             |+-----------------+
+ebp (4 byte)            |ebp (4byte)            |ebp (4byte)                    |ebp (4byte)
++---------------+       |+------------------+   |+----------------+             |+-----------------+
+                        |A <- last input        |A                              |A  <- ebp(-0x10) <- passcode1 location
+                        |A                      |A                              |A
+                        |A                      |A                              |A
+                        |A                      |A                              |A
+                        |A                      |A                              |A (stack get reused)
+                        |A                      |A                              |A
+                        |A                      |A                              |A
+                        |A                      |A                              |A
+                        |A                      |A                              |A
+esp (0x70byte)          |A <- first input       |A                              |A
++---------------+       |+------------------+   |+-----------+ <- return here   |+------------------+
+```
+</Codeblock>
+<Paragraph>but what if we don't have the source code? how could we determine the maximum input length?</Paragraph>
 <br/>
 <Paragraph>first you need to put break point on the address where scanf is called and run the program until it reach the break point, so the length will stored in `unaff_EBX + 0xd77`, then to know what inside `unaff_EBX + 0xd77` radare2 already has a build-in command for that</Paragraph>
 <br/>
