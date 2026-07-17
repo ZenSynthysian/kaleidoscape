@@ -254,7 +254,7 @@ oeax = 0x000000fc
 </Codeblock>
 <Paragraph>notice welcome is returned before login get called? that behaviour may can lead to stack frame reuse, because the stack frame used by welcome() is later reused by login(), the last few bytes of the name buffer overlap with the memory that will later hold passcode1. By supplying a sufficiently long input, I can control the initial value of passcode1. Since scanf("%d", passcode1) treats that value as a pointer, I can control the address that scanf will write to.</Paragraph>
 <br/>
-<Paragraph>look at the highlighted code, you can see the name variable is -0x70 from rbp and passcode1 -0x10 from rbp, to calculate how many byte needed to reach passcode 1, you can substract 0x70 with 0x10, so we need 96 byte to reach passcode1 from name variable</Paragraph>
+<Paragraph>look at the highlighted code, you can see the name variable is -0x70 from ebp and passcode1 -0x10 from ebp, to calculate how many byte needed to reach passcode 1, you can substract 0x70 with 0x10, so we need 96 byte to reach passcode1 from name variable</Paragraph>
 <br/>
 <Paragraph>we know from the source code that i can input 100 byte, so reach passcode1 is possible</Paragraph>
 <Codeblock filename="stackReuseVisual.txt">
