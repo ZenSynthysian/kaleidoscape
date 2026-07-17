@@ -1,5 +1,17 @@
 [
     {
+        "title": "pwnable.kr Writeup | passcode",
+        "difficulty": "Easy",
+        "isFeatured": "True",
+        "author": "Rvexrie",
+        "dateCreated": "17/7/2026",
+        "tags": ["Radare2", "GOT Overwrite", "Stack Buffer Overflow"],
+        "description": "Passcode is a beginner-level binary exploitation challenge that focuses on exploiting the C standard input function and manipulating dynamic tables in 32-bit ELF binary files.",
+        "type": "PWN",
+        "link": "/writeup/passcode",
+        "platform": "pwnable.kr"
+    },
+    {
         "title": "picoCTF Writeup | Forensics Git 2",
         "difficulty": "Medium",
         "isFeatured": "False",
@@ -26,7 +38,7 @@
     {
         "title": "picoCTF Writeup | Dear Diary",
         "difficulty": "Medium",
-        "isFeatured": "True",
+        "isFeatured": "False",
         "author": "Rvexrie",
         "dateCreated": "2/7/2026",
         "tags": ["SleuthKit", "Disk Image", "Inode Logging"],
@@ -34,17 +46,5 @@
         "type": "Forensics",
         "link": "/writeup/deardiary",
         "platform": "PICO"
-    },
-    {
-        "title": "HTB Writeup | Variatype",
-        "difficulty": "Medium",
-        "isFeatured": "False",
-        "author": "Rvexrie",
-        "dateCreated": "21/2/2026",
-        "tags": ["Web Exploitation", "Supply Chain Attack", "Arbritary File Write"],
-        "description": "This machine focuses on the Supply Chain and Dependency risk. It simulates how outdated tools like fonttools and fontforge can become critical weak points. The path to root is particularly educational, highlighting a common pitfall in Python's os.path.join() function where unsanitized user input can lead to arbitrary file writes in sensitive directories like /root/.ssh",
-        "type": "Boot2Root",
-        "link": "/writeup/variatype",
-        "platform": "HTB"
     }
 ]

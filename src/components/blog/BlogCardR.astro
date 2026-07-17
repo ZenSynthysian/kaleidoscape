@@ -18,7 +18,7 @@ const finalLink = link === '#' ? '#' : `${baseUrl}${hrefPath}`;
                 {tags3 && <div class="truncate relative rounded-full bg-purple-200 px-3 text-xs md:text-sm font-code flex justify-center items-center">{tags3}</div>}
             </div>
             <div class="px-4 sm:py-2 pb-2 pt-0 flex gap-2 shrink-0">
-                <div class=`rounded-full font-code flex justify-center items-center ${difficulty == 'Insane' ? 'bg-red-400 text-white' : ''} ${difficulty == 'Hard' ? 'bg-red-300' : ''} ${difficulty == 'Medium' ? 'bg-indigo-300' : ''} ${difficulty == 'Easy' ? 'bg-green-300' : ''} ${difficulty == 'Very Easy' ? 'bg-green-200' : ''} px-3 py-1 sm:py-0 text-xs md:text-sm`>
+                <div class=`rounded-full font-code flex justify-center items-center ${difficulty == 'NaN' ? 'bg-gray-700 text-white' : ''} ${difficulty == 'Insane' ? 'bg-red-400 text-white' : ''} ${difficulty == 'Hard' ? 'bg-red-300' : ''} ${difficulty == 'Medium' ? 'bg-indigo-300' : ''} ${difficulty == 'Easy' ? 'bg-green-300' : ''} ${difficulty == 'Very Easy' ? 'bg-green-200' : ''} px-3 py-1 sm:py-0 text-xs md:text-sm`>
                     {difficulty}
                 </div>
             </div>

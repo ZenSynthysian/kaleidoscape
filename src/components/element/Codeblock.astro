@@ -3,21 +3,21 @@ const { filename = 'default.txt' } = Astro.props;
 ---
 
 <div class="bg-code-bg m-2 md:m-5 font-code text-text-code rounded-xl overflow-hidden">
-    <div class="flex flex-col">
-        <div class="flex justify-between items-center border-b-2 py-2 px-4 gap-2">
-            <div class="flex gap-2 shrink-0">
-                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-            </div>
-            <div class="text-center text-xs md:text-sm font-medium truncate max-w-[150px] sm:max-w-none">{filename}</div>
-            <div class="w-12 shrink-0"></div> </div>
-        <div>
-            <div class="pl-4 pr-4 text-text-code/90 overflow-auto">
-                <pre class="m-0 text-xs md:text-sm whitespace-pre inline-block min-w-full py-3">
-                    <slot />
-                </pre>
-            </div>
+    <div class="flex justify-between items-center border-b-2 py-2 px-4 gap-2">
+        <div class="flex gap-2 shrink-0">
+            <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+            <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
         </div>
+
+        <div class="text-center text-xs md:text-sm font-medium truncate">
+            {filename}
+        </div>
+
+        <div class="w-12"></div>
+    </div>
+
+    <div class="overflow-auto">
+        <slot />
     </div>
 </div>

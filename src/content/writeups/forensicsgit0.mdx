@@ -65,10 +65,12 @@ Normally, the contents of a partition are similar to those of the partition at o
 Create a dedicated directory, since we will extract the contents of that partition for immediate analysis.
 </Paragraph>
 <Codeblock filename="command.txt">
+```
 Command to create a new directory: mkdir directory_name
 Command to extract the contents of a partition: tsk_recover -r -o partition_offset filename destination_directory
 Enter that directory using cd directory_name
 Use find directory_name -name pattern_name
+```
 </Codeblock>
 <Paragraph>
 
